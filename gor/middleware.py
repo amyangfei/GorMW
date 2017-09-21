@@ -18,7 +18,9 @@ class TornadoGor(Gor):
     def _process(self):
         line = yield self.q.get()
         try:
-            print 'from worker: %s' % line,
+            msg = self.parse_message(line)
+            if msg:
+                self.emit(msg, line)
         finally:
             self.q.task_done()
 
@@ -29,7 +31,6 @@ class TornadoGor(Gor):
 
     @gen.coroutine
     def _run(self):
-
         for _ in range(self.concurrency):
             self._worker()
 
@@ -45,5 +46,5 @@ class TornadoGor(Gor):
             yield
 
     def run(self):
-        io_loop = ioloop.IOLoop.current()
-        io_loop.run_sync(self._run)
+        self.io_loop = ioloop.IOLoop.current()
+        self.io_loop.run_sync(self._run)

@@ -1,18 +1,35 @@
 # coding: utf-8
 
 import sys
+import datetime
+import traceback
 
 def gor_hex_data(data):
-    return ''.join(map(lambda x: x.encode('hex'), data.rawMeta, '\n', data.http)) + '\n'
+    return ''.join(map(lambda x: x.encode('hex'), [data['raw_meta'], '\n', data['http']])) + '\n'
 
 
 class Gor(object):
 
     def __init__(self, stderr=None):
         self.stderr = stderr or sys.stderr
+        self.ch = {}
 
     def run(self):
         raise NotImplementedError
+
+    def on(self, chan, idx, callback):
+        if not callback and idx:
+            callback = idx
+        elif callback and idx:
+            chan = chan + '#' + idx
+
+        if not self.ch.get(chan):
+            self.ch[chan] = []
+
+        self.ch[chan].append({
+            'created': datetime.datetime.now(),
+            'callback': callback,
+        })
 
     def emit(self, msg, raw):
         chan_prefix_map = {
@@ -20,9 +37,9 @@ class Gor(object):
             '2': 'response',
             '3': 'replay',
         }
-        chan_prefix = chan_prefix_map[msg.type]
+        chan_prefix = chan_prefix_map[msg['type']]
         resp = msg
-        for chan_id in ['message', chan_prefix, chan_prefix + '#' + msg.id]:
+        for chan_id in ['message', chan_prefix, chan_prefix + '#' + msg['id']]:
             if self.ch.get(chan_id):
                 for channel in self.ch[chan_id]:
                     r = channel.callback(msg)
@@ -30,10 +47,11 @@ class Gor(object):
                         resp = r
         if resp:
             sys.stdout.write(gor_hex_data(resp))
+            sys.stdout.flush()
 
     def parse_message(self, line):
         try:
-            payload = line.decode('hex')
+            payload = line.strip().decode('hex')
             meta_pos = payload.index('\n')
             meta = payload[:meta_pos]
             meta_arr = meta.split(' ')
@@ -48,6 +66,7 @@ class Gor(object):
             }
         except Exception as e:
             self.stderr.write('Error while parsing incoming request: %s %s' % (line, e))
+            traceback.print_exc(file=sys.stderr)
 
     def http_path(self, payload):
         pstart = payload.index(' ') + 1
