@@ -12,7 +12,7 @@ class TornadoGor(Gor):
     def __init__(self, *args, **kwargs):
         super(TornadoGor, self).__init__(*args, **kwargs)
         self.q = queues.Queue()
-        self.concurrency = kwargs.get('concurrency', 10)
+        self.concurrency = kwargs.get('concurrency', 2)
 
     @gen.coroutine
     def _process(self):

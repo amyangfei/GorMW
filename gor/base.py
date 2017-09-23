@@ -17,19 +17,17 @@ class Gor(object):
     def run(self):
         raise NotImplementedError
 
-    def on(self, chan, idx, callback):
-        if not callback and idx:
-            callback = idx
-        elif callback and idx:
+    def on(self, chan, callback, idx=None, **kwargs):
+        if idx is not None:
             chan = chan + '#' + idx
 
-        if not self.ch.get(chan):
-            self.ch[chan] = []
-
+        self.ch.setdefault(chan, [])
         self.ch[chan].append({
             'created': datetime.datetime.now(),
             'callback': callback,
+            'kwargs': kwargs,
         })
+        return self
 
     def emit(self, msg, raw):
         chan_prefix_map = {
@@ -42,7 +40,7 @@ class Gor(object):
         for chan_id in ['message', chan_prefix, chan_prefix + '#' + msg['id']]:
             if self.ch.get(chan_id):
                 for channel in self.ch[chan_id]:
-                    r = channel.callback(msg)
+                    r = channel['callback'](self, msg, **channel['kwargs'])
                     if r:
                         resp = r
         if resp:
