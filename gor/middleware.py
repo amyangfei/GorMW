@@ -1,10 +1,24 @@
 # coding: utf-8
 
-import os, sys
+import sys
+import errno
+import logging
 
 from .base import Gor
 
 from tornado import gen, ioloop, queues
+
+
+import contextlib
+from tornado.stack_context import StackContext
+
+@contextlib.contextmanager
+def die_on_error():
+    try:
+        yield
+    except Exception:
+        logging.error("exception in asynchronous operation", exc_info=True)
+        sys.exit(1)
 
 
 class TornadoGor(Gor):
@@ -38,13 +52,13 @@ class TornadoGor(Gor):
             try:
                 line = sys.stdin.readline()
             except KeyboardInterrupt:
-                try:
-                    sys.exit(0)
-                except SystemExit:
-                    os._exit(0)
+                ioloop.IOLoop.instance().stop()
+                break
             self.q.put(line)
             yield
 
     def run(self):
-        self.io_loop = ioloop.IOLoop.current()
-        self.io_loop.run_sync(self._run)
+        with StackContext(die_on_error):
+            self.io_loop = ioloop.IOLoop.current()
+            self.io_loop.run_sync(self._run)
+            sys.exit(errno.EINTR)
