@@ -29,7 +29,7 @@ class Gor(object):
         })
         return self
 
-    def emit(self, msg, raw):
+    def emit(self, msg):
         chan_prefix_map = {
             '1': 'request',
             '2': 'response',

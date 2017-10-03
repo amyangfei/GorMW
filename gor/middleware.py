@@ -34,7 +34,7 @@ class TornadoGor(Gor):
         try:
             msg = self.parse_message(line)
             if msg:
-                self.emit(msg, line)
+                self.emit(msg)
         finally:
             self.q.task_done()
 
