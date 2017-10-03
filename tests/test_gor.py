@@ -25,10 +25,83 @@ class TestCommon(unittest.TestCase):
         for k, v in expected.items():
             self.assertEqual(message.get(k), v)
 
+    def test_http_method(self):
+        payload = 'GET /test HTTP/1.1\r\n\r\n'
+        method = self.gor.http_method(payload)
+        self.assertEqual(method, 'GET')
+
     def test_http_path(self):
         payload = "GET /test HTTP/1.1\r\n\r\n"
         path = self.gor.http_path(payload)
         self.assertEqual(path, "/test")
 
+        new_payload = self.gor.set_http_path(payload, "/")
+        self.assertEqual(new_payload, "GET / HTTP/1.1\r\n\r\n")
+
         new_payload = self.gor.set_http_path(payload, "/new/test")
         self.assertEqual(new_payload, "GET /new/test HTTP/1.1\r\n\r\n")
+
+    def test_http_path_param(self):
+        payload = 'GET / HTTP/1.1\r\n\r\n'
+        self.assertIsNone(self.gor.http_path_param(payload, 'test'))
+
+        payload = self.gor.set_http_path_param(payload, 'test', '123')
+        self.assertEqual(self.gor.http_path(payload), '/?test=123')
+        self.assertIn('123', self.gor.http_path_param(payload, 'test'))
+
+        payload = self.gor.set_http_path_param(payload, 'qwer', 'ty')
+        self.assertEqual(self.gor.http_path(payload), '/?test=123&qwer=ty')
+        self.assertIn('ty', self.gor.http_path_param(payload, 'qwer'))
+
+    def test_http_header(self):
+        payload = 'GET / HTTP/1.1\r\nHost: localhost:3000\r\nUser-Agent: Python\r\nContent-Length:5\r\n\r\nhello'
+        expected = {
+            'Host': 'localhost:3000',
+            'User-Agent': 'Python',
+            'Content-Length': '5',
+        }
+        for name, value in expected.items():
+            header = self.gor.http_header(payload, name)
+            self.assertIsNotNone(header)
+            self.assertEqual(header['value'], value)
+
+    def test_set_http_header(self):
+        payload = 'GET / HTTP/1.1\r\nUser-Agent: Python\r\nContent-Length: 5\r\n\r\nhello'
+        uas = ['', '1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_0)']
+        expected = 'GET / HTTP/1.1\r\nUser-Agent: {ua}\r\nContent-Length: 5\r\n\r\nhello'
+        for ua in uas:
+            new_payload = self.gor.set_http_header(payload, 'User-Agent', ua)
+            self.assertEqual(new_payload, expected.format(ua=ua))
+
+        expected = 'GET / HTTP/1.1\r\nX-Test: test\r\nUser-Agent: Python\r\nContent-Length: 5\r\n\r\nhello'
+        new_payload = self.gor.set_http_header(payload, 'X-Test', 'test')
+        self.assertEqual(new_payload, expected)
+
+        expected = 'GET / HTTP/1.1\r\nX-Test2: test2\r\nX-Test: test\r\nUser-Agent: Python\r\nContent-Length: 5\r\n\r\nhello'
+        new_payload = self.gor.set_http_header(new_payload, 'X-Test2', 'test2')
+        self.assertEqual(new_payload, expected)
+
+    def test_http_body(self):
+        payload = 'GET / HTTP/1.1\r\nUser-Agent: Python\r\nContent-Length: 5\r\n\r\nhello'
+        body = self.gor.http_body(payload)
+        self.assertEqual(body, 'hello')
+
+    def test_set_http_body(self):
+        payload = 'GET / HTTP/1.1\r\nUser-Agent: Python\r\nContent-Length: 5\r\n\r\nhello'
+        new_payload = self.gor.set_http_body(payload, 'hello, world!')
+        expected = 'GET / HTTP/1.1\r\nUser-Agent: Python\r\nContent-Length: 13\r\n\r\nhello, world!'
+        self.assertEqual(new_payload, expected)
+
+    def test_http_cookie(self):
+        payload = 'GET / HTTP/1.1\r\nCookie: a=b; test=zxc\r\n\r\n'
+        cookie = self.gor.http_cookie(payload, 'test')
+        self.assertEqual(cookie, 'zxc')
+        cookie = self.gor.http_cookie(payload, 'nope')
+        self.assertIsNone(cookie)
+
+    def test_set_http_cookie(self):
+        payload = 'GET / HTTP/1.1\r\nCookie: a=b; test=zxc\r\n\r\n'
+        new_payload = self.gor.set_http_cookie(payload, 'test', '111')
+        self.assertEqual(new_payload, 'GET / HTTP/1.1\r\nCookie: a=b; test=111\r\n\r\n')
+        new_payload = self.gor.set_http_cookie(payload, 'new', 'one%3d%3d--test')
+        self.assertEqual(new_payload, 'GET / HTTP/1.1\r\nCookie: a=b; test=zxc; new=one%3d%3d--test\r\n\r\n')

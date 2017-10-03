@@ -1,8 +1,16 @@
 # coding: utf-8
 
+import re
 import sys
 import datetime
 import traceback
+try:
+    from url.parse import urlparse, parse_qs
+    from urllib.parse import quote_plus
+except ImportError:
+    from urlparse import urlparse, parse_qs
+    from urllib import quote_plus
+
 
 def gor_hex_data(data):
     return ''.join(map(lambda x: x.encode('hex'), [data['raw_meta'], '\n', data['http']])) + '\n'
@@ -66,6 +74,10 @@ class Gor(object):
             self.stderr.write('Error while parsing incoming request: %s %s' % (line, e))
             traceback.print_exc(file=sys.stderr)
 
+    def http_method(self, payload):
+        pend = payload.index(' ')
+        return payload[:pend]
+
     def http_path(self, payload):
         pstart = payload.index(' ') + 1
         pend = payload.index(' ', pstart)
@@ -75,3 +87,102 @@ class Gor(object):
         pstart = payload.index(' ') + 1
         pend = payload.index(' ', pstart)
         return payload[:pstart] + new_path + payload[pend:]
+
+    def http_path_param(self, payload, name):
+        path_qs = self.http_path(payload)
+        query_dict = parse_qs(urlparse(path_qs).query)
+        return query_dict.get(name)
+
+    def set_http_path_param(self, payload, name, value):
+        path_qs = self.http_path(payload)
+        new_path = re.sub(name + '=([^&$]+)',
+                          name + '=' + quote_plus(value),
+                          path_qs)
+        if new_path == path_qs:
+            if '?' not in new_path:
+                new_path += '?'
+            else:
+                new_path += '&'
+            new_path += name + '=' + quote_plus(value)
+        return self.set_http_path(payload, new_path)
+
+    def http_status(self, payload):
+        '''
+        HTTP response have status code in same position as `path` for requests
+        '''
+        return self.http_path(payload)
+
+    def set_http_status(self, payload, new_status):
+        return self.set_http_path(payload, new_status)
+
+    def http_header(self, payload, name):
+        current_line = 0
+        idx = 0
+        header = {
+            'start': -1,
+            'end': -1,
+            'value_start': -1,
+        }
+        while idx < len(payload):
+            c = payload[idx]
+            if c == '\n':
+                current_line += 1
+                idx += 1
+                header['end'] = idx
+
+                if current_line > 0 and header['start'] > 0 and header['value_start'] > 0:
+                    if payload[header['start']:header['value_start']-1].lower() == name.lower():
+                        header['value'] = payload[header['value_start']:header['end']].strip().encode('utf-8')
+                        header['name'] = name.lower()
+                        return header
+
+                header['start'] = -1
+                header['value_start'] = -1
+                continue
+            elif c == '\r':
+                idx += 1
+                continue
+            elif c == ':':
+                if header['value_start'] == -1:
+                    idx += 1
+                    header['value_start'] = idx
+                    continue
+            if header['start'] == -1:
+                header['start'] = idx
+            idx += 1
+        return None
+
+    def set_http_header(self, payload, name, value):
+        header = self.http_header(payload, name)
+        if header is None:
+            header_start = payload.index('\n') + 1
+            return payload[:header_start] + name + ': ' + value + '\r\n' + payload[header_start:]
+        else:
+            return payload[:header['value_start']] + ' ' + value + '\r\n' + payload[header['end']:]
+
+    def http_body(self, payload):
+        if '\r\n\r\n' not in payload:
+            return ''
+        return payload[payload.index('\r\n\r\n')+4:]
+
+    def set_http_body(self, payload, new_body):
+        payload = self.set_http_header(payload, 'Content-Length', str(len(new_body)))
+        if '\r\n\r\n' not in payload:
+            return payload + '\r\n\r\n' + new_body
+        else:
+            return payload[:payload.index('\r\n\r\n')+4] + new_body
+
+    def http_cookie(self, payload, name):
+        cookie_data = self.http_header(payload, 'Cookie')
+        cookies = cookie_data.get('value') or ''
+        for item in cookies.split('; '):
+            if item.startswith(name + '='):
+                return item[item.index('=')+1:]
+        return None
+
+    def set_http_cookie(self, payload, name, value):
+        cookie_data = self.http_header(payload, 'Cookie')
+        cookies = cookie_data.get('value') or ''
+        cookies = filter(lambda x: not x.startswith(name + '='), cookies.split('; '))
+        cookies.append(name + '=' + value)
+        return self.set_http_header(payload, 'Cookie', '; '.join(cookies))
