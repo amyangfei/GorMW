@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import binascii
 import unittest
 
 from gor.base import Gor
@@ -14,7 +15,7 @@ class TestCommon(unittest.TestCase):
         pass
 
     def test_parse_message(self):
-        payload = "1 2 3\nGET / HTTP/1.1\r\n\r\n".encode("hex")
+        payload = binascii.hexlify(b'1 2 3\nGET / HTTP/1.1\r\n\r\n')
         message = self.gor.parse_message(payload)
         expected = {
             "type": "1",
@@ -54,7 +55,7 @@ class TestCommon(unittest.TestCase):
         self.assertIn('ty', self.gor.http_path_param(payload, 'qwer'))
 
     def test_http_header(self):
-        payload = 'GET / HTTP/1.1\r\nHost: localhost:3000\r\nUser-Agent: Python\r\nContent-Length:5\r\n\r\nhello'
+        payload = b'GET / HTTP/1.1\r\nHost: localhost:3000\r\nUser-Agent: Python\r\nContent-Length:5\r\n\r\nhello'
         expected = {
             'Host': 'localhost:3000',
             'User-Agent': 'Python',
@@ -66,12 +67,12 @@ class TestCommon(unittest.TestCase):
             self.assertEqual(header['value'], value)
 
     def test_set_http_header(self):
-        payload = 'GET / HTTP/1.1\r\nUser-Agent: Python\r\nContent-Length: 5\r\n\r\nhello'
+        payload = b'GET / HTTP/1.1\r\nUser-Agent: Python\r\nContent-Length: 5\r\n\r\nhello'
         uas = ['', '1', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_0)']
-        expected = 'GET / HTTP/1.1\r\nUser-Agent: {ua}\r\nContent-Length: 5\r\n\r\nhello'
+        expected = 'GET / HTTP/1.1\r\nUser-Agent: %s\r\nContent-Length: 5\r\n\r\nhello'
         for ua in uas:
             new_payload = self.gor.set_http_header(payload, 'User-Agent', ua)
-            self.assertEqual(new_payload, expected.format(ua=ua))
+            self.assertEqual(new_payload, expected % ua)
 
         expected = 'GET / HTTP/1.1\r\nX-Test: test\r\nUser-Agent: Python\r\nContent-Length: 5\r\n\r\nhello'
         new_payload = self.gor.set_http_header(payload, 'X-Test', 'test')
@@ -100,7 +101,7 @@ class TestCommon(unittest.TestCase):
         self.assertIsNone(cookie)
 
     def test_set_http_cookie(self):
-        payload = 'GET / HTTP/1.1\r\nCookie: a=b; test=zxc\r\n\r\n'
+        payload = b'GET / HTTP/1.1\r\nCookie: a=b; test=zxc\r\n\r\n'
         new_payload = self.gor.set_http_cookie(payload, 'test', '111')
         self.assertEqual(new_payload, 'GET / HTTP/1.1\r\nCookie: a=b; test=111\r\n\r\n')
         new_payload = self.gor.set_http_cookie(payload, 'new', 'one%3d%3d--test')

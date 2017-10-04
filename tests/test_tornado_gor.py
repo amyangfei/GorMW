@@ -1,5 +1,6 @@
 # coding: utf-8
 
+import binascii
 import unittest
 
 from gor.middleware import TornadoGor
@@ -24,9 +25,9 @@ class TestTornadoGor(unittest.TestCase):
         self.gor.on('response', _incr_received, idx='2', passby=passby)
         self.assertEqual(len(self.gor.ch), 3)
 
-        req = self.gor.parse_message('1 2 3\nGET / HTTP/1.1\r\n\r\n'.encode('hex'))
-        resp = self.gor.parse_message('2 2 3\nHTTP/1.1 200 OK\r\n\r\n'.encode('hex'))
-        resp2 = self.gor.parse_message('2 3 3\nHTTP/1.1 200 OK\r\n\r\n'.encode('hex'))
+        req = self.gor.parse_message(binascii.hexlify(b'1 2 3\nGET / HTTP/1.1\r\n\r\n'))
+        resp = self.gor.parse_message(binascii.hexlify(b'2 2 3\nHTTP/1.1 200 OK\r\n\r\n'))
+        resp2 = self.gor.parse_message(binascii.hexlify(b'2 3 3\nHTTP/1.1 200 OK\r\n\r\n'))
         self.gor.emit(req)
         self.gor.emit(resp)
         self.gor.emit(resp2)

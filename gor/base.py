@@ -2,18 +2,27 @@
 
 import re
 import sys
+import binascii
 import datetime
 import traceback
+PY3 = sys.version_info >= (3,)
 try:
-    from url.parse import urlparse, parse_qs
-    from urllib.parse import quote_plus
+    from urllib.parse import quote_plus, urlparse, parse_qs
 except ImportError:
     from urlparse import urlparse, parse_qs
     from urllib import quote_plus
 
 
 def gor_hex_data(data):
-    return ''.join(map(lambda x: x.encode('hex'), [data.raw_meta, '\n', data.http])) + '\n'
+    if PY3:
+        data = b''.join(
+            map(lambda x: binascii.hexlify(x)
+                if isinstance(x, bytes) else binascii.hexlify(x.encode()),
+                [data.raw_meta, '\n', data.http])) + b'\n'
+        return data.decode('utf-8')
+    else:
+        return ''.join(map(lambda x: binascii.hexlify(x),
+                           [data.raw_meta, '\n', data.http])) + '\n'
 
 
 class GorMessage(object):
@@ -67,7 +76,9 @@ class Gor(object):
 
     def parse_message(self, line):
         try:
-            payload = line.strip().decode('hex')
+            payload = binascii.unhexlify(line.strip())
+            if PY3:
+                payload = payload.decode()
             meta_pos = payload.index('\n')
             meta = payload[:meta_pos]
             meta_arr = meta.split(' ')
@@ -127,6 +138,8 @@ class Gor(object):
             'end': -1,
             'value_start': -1,
         }
+        if PY3 and isinstance(payload, bytes):
+            payload = payload.decode()
         while idx < len(payload):
             c = payload[idx]
             if c == '\n':
@@ -136,7 +149,9 @@ class Gor(object):
 
                 if current_line > 0 and header['start'] > 0 and header['value_start'] > 0:
                     if payload[header['start']:header['value_start']-1].lower() == name.lower():
-                        header['value'] = payload[header['value_start']:header['end']].strip().encode('utf-8')
+                        header['value'] = payload[header['value_start']:header['end']].strip()
+                        if not PY3:
+                            header['value'] = header['value'].encode('utf-8')
                         header['name'] = name.lower()
                         return header
 
@@ -157,6 +172,8 @@ class Gor(object):
         return None
 
     def set_http_header(self, payload, name, value):
+        if PY3 and isinstance(payload, bytes):
+            payload = payload.decode()
         header = self.http_header(payload, name)
         if header is None:
             header_start = payload.index('\n') + 1
@@ -187,6 +204,6 @@ class Gor(object):
     def set_http_cookie(self, payload, name, value):
         cookie_data = self.http_header(payload, 'Cookie')
         cookies = cookie_data.get('value') or ''
-        cookies = filter(lambda x: not x.startswith(name + '='), cookies.split('; '))
+        cookies = list(filter(lambda x: not x.startswith(name + '='), cookies.split('; ')))
         cookies.append(name + '=' + value)
         return self.set_http_header(payload, 'Cookie', '; '.join(cookies))
