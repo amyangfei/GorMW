@@ -23,7 +23,7 @@ class TestCommon(unittest.TestCase):
             "http": "GET / HTTP/1.1\r\n\r\n",
         }
         for k, v in expected.items():
-            self.assertEqual(message.get(k), v)
+            self.assertEqual(getattr(message, k, None), v)
 
     def test_http_method(self):
         payload = 'GET /test HTTP/1.1\r\n\r\n'

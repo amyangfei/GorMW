@@ -13,7 +13,17 @@ except ImportError:
 
 
 def gor_hex_data(data):
-    return ''.join(map(lambda x: x.encode('hex'), [data['raw_meta'], '\n', data['http']])) + '\n'
+    return ''.join(map(lambda x: x.encode('hex'), [data.raw_meta, '\n', data.http])) + '\n'
+
+
+class GorMessage(object):
+
+    def __init__(self, _id, _type, meta, raw_meta, http):
+        self.id = _id
+        self.type = _type
+        self.meta = meta
+        self.raw_meta = raw_meta
+        self.http = http
 
 
 class Gor(object):
@@ -43,9 +53,9 @@ class Gor(object):
             '2': 'response',
             '3': 'replay',
         }
-        chan_prefix = chan_prefix_map[msg['type']]
+        chan_prefix = chan_prefix_map[msg.type]
         resp = msg
-        for chan_id in ['message', chan_prefix, chan_prefix + '#' + msg['id']]:
+        for chan_id in ['message', chan_prefix, chan_prefix + '#' + msg.id]:
             if self.ch.get(chan_id):
                 for channel in self.ch[chan_id]:
                     r = channel['callback'](self, msg, **channel['kwargs'])
@@ -63,13 +73,7 @@ class Gor(object):
             meta_arr = meta.split(' ')
             p_type, p_id = meta_arr[0], meta_arr[1]
             raw = payload[meta_pos+1:]
-            return {
-                'type': p_type,
-                'id': p_id,
-                'raw_meta': meta,
-                'meta': meta_arr,
-                'http': raw,
-            }
+            return GorMessage(p_id, p_type, meta_arr, meta, raw)
         except Exception as e:
             self.stderr.write('Error while parsing incoming request: %s %s' % (line, e))
             traceback.print_exc(file=sys.stderr)
