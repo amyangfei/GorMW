@@ -1,10 +1,10 @@
 GoReplay Middleware
-========
+===================
 
 Python library for `GoReplay Middleware <https://github.com/buger/goreplay>`_ , API is quite similar to `NodeJS library <https://github.com/buger/goreplay/tree/master/middleware>`_
 
-.. image:: https://badge.fury.io/py/gormw.svg
-    :target: https://badge.fury.io/py/gormw
+.. image:: https://badge.fury.io/py/gor.svg
+    :target: https://badge.fury.io/py/gor
 .. image:: https://travis-ci.org/amyangfei/GorMW.svg?branch=master
     :target: https://travis-ci.org/amyangfei/GorMW
 
