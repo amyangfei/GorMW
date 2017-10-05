@@ -15,7 +15,7 @@ To install GorMW, simply:
 
 .. code-block:: bash
 
-    $ pip install GorMW
+    $ pip install gor
 
 or from source:
 
