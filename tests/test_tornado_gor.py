@@ -1,12 +1,10 @@
 # coding: utf-8
 
+import io
 import sys
-import time
 import binascii
 import unittest
 
-PY3 = sys.version_info >= (3,)
-from tornado import gen, ioloop
 from gor.middleware import TornadoGor
 
 
@@ -53,12 +51,7 @@ class TestTornadoGor(unittest.TestCase):
             binascii.hexlify(b'2 2 3\nHTTP/1.1 200 OK\r\n\r\n').decode("utf-8"),
             binascii.hexlify(b'2 3 3\nHTTP/1.1 200 OK\r\n\r\n').decode("utf-8"),
         ])
-        if PY3:
-            import io
-            sys.stdin = io.StringIO(payload)
-        else:
-            import StringIO
-            sys.stdin = StringIO.StringIO(payload)
+        sys.stdin = io.StringIO(payload)
         self._proxy_coroutine(passby)
         self.assertEqual(passby['received'], 5)
         sys.stdin = old_stdin
