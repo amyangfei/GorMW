@@ -43,6 +43,11 @@ class TornadoGor(Gor):
             yield self._process()
 
     @gen.coroutine
+    def _cleanup(self):
+        yield self.q.join()
+        ioloop.IOLoop.instance().stop()
+
+    @gen.coroutine
     def _run(self):
         for _ in range(self.concurrency):
             self._worker()
@@ -51,12 +56,10 @@ class TornadoGor(Gor):
             try:
                 line = sys.stdin.readline()
             except KeyboardInterrupt:
-                yield self.q.join()
-                ioloop.IOLoop.instance().stop()
+                self._cleanup()
                 break
             if not line:
-                yield self.q.join()
-                ioloop.IOLoop.instance().stop()
+                self._cleanup()
                 break
             self.q.put(line)
             yield

@@ -49,9 +49,9 @@ class TestTornadoGor(unittest.TestCase):
         old_stdin = sys.stdin
         passby = {'received': 0}
         payload = "\n".join([
-            binascii.hexlify(b'1 2 3\nGET / HTTP/1.1\r\n\r\n'),
-            binascii.hexlify(b'2 2 3\nHTTP/1.1 200 OK\r\n\r\n'),
-            binascii.hexlify(b'2 3 3\nHTTP/1.1 200 OK\r\n\r\n'),
+            binascii.hexlify(b'1 2 3\nGET / HTTP/1.1\r\n\r\n').decode("utf-8"),
+            binascii.hexlify(b'2 2 3\nHTTP/1.1 200 OK\r\n\r\n').decode("utf-8"),
+            binascii.hexlify(b'2 3 3\nHTTP/1.1 200 OK\r\n\r\n').decode("utf-8"),
         ])
         if PY3:
             import io
