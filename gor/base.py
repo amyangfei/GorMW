@@ -86,7 +86,7 @@ class Gor(object):
             raw = payload[meta_pos+1:]
             return GorMessage(p_id, p_type, meta_arr, meta, raw)
         except Exception as e:
-            self.stderr.write('Error while parsing incoming request: %s %s' % (line, e))
+            self.stderr.write('Error while parsing incoming request: "%s" %s' % (line, e))
             traceback.print_exc(file=sys.stderr)
 
     def http_method(self, payload):

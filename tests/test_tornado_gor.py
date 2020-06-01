@@ -1,9 +1,17 @@
 # coding: utf-8
 
+import sys
+import time
 import binascii
 import unittest
 
+PY3 = sys.version_info >= (3,)
+from tornado import gen, ioloop
 from gor.middleware import TornadoGor
+
+
+def _incr_received(proxy, msg, **kwargs):
+    kwargs['passby']['received'] += 1
 
 
 class TestTornadoGor(unittest.TestCase):
@@ -15,9 +23,6 @@ class TestTornadoGor(unittest.TestCase):
         pass
 
     def test_init(self):
-
-        def _incr_received(proxy, msg, **kwargs):
-            kwargs['passby']['received'] += 1
 
         passby = {'received': 0}
         self.gor.on('message', _incr_received, passby=passby)
@@ -32,3 +37,28 @@ class TestTornadoGor(unittest.TestCase):
         self.gor.emit(resp)
         self.gor.emit(resp2)
         self.assertEqual(passby['received'], 5)
+
+    def _proxy_coroutine(self, passby):
+        proxy = TornadoGor()
+        proxy.on('message', _incr_received, passby=passby)
+        proxy.on('request', _incr_received, passby=passby)
+        proxy.on('response', _incr_received, idx='2', passby=passby)
+        proxy.run()
+
+    def test_run(self):
+        old_stdin = sys.stdin
+        passby = {'received': 0}
+        payload = "\n".join([
+            binascii.hexlify(b'1 2 3\nGET / HTTP/1.1\r\n\r\n'),
+            binascii.hexlify(b'2 2 3\nHTTP/1.1 200 OK\r\n\r\n'),
+            binascii.hexlify(b'2 3 3\nHTTP/1.1 200 OK\r\n\r\n'),
+        ])
+        if PY3:
+            import io
+            sys.stdin = io.StringIO(payload)
+        else:
+            import StringIO
+            sys.stdin = StringIO.StringIO(payload)
+        self._proxy_coroutine(passby)
+        self.assertEqual(passby['received'], 5)
+        sys.stdin = old_stdin

@@ -1,7 +1,6 @@
 # coding: utf-8
 
 import sys
-import errno
 import logging
 
 from .base import Gor
@@ -52,6 +51,11 @@ class TornadoGor(Gor):
             try:
                 line = sys.stdin.readline()
             except KeyboardInterrupt:
+                yield self.q.join()
+                ioloop.IOLoop.instance().stop()
+                break
+            if not line:
+                yield self.q.join()
                 ioloop.IOLoop.instance().stop()
                 break
             self.q.put(line)
@@ -61,4 +65,3 @@ class TornadoGor(Gor):
         with StackContext(die_on_error):
             self.io_loop = ioloop.IOLoop.current()
             self.io_loop.run_sync(self._run)
-            sys.exit(errno.EINTR)
