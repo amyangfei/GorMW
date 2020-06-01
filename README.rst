@@ -79,3 +79,7 @@ You can provide request ID as additional argument to on function, which allow yo
         proxy = TornadoGor()
         proxy.on('request', on_request)
         proxy.run()
+
+.. Note::
+
+    Since the release v0.2.x, Python2.7 and Python3.4 are not supported any more, the minimum supported Python version is 3.5.2. Besides the release v0.1.x is still compatible with Python2.7 and Python3.4.

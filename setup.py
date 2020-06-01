@@ -5,7 +5,7 @@ import os
 from setuptools import setup
 
 requirements = [
-    'tornado >= 4.5.2, < 6.0.0'
+    'tornado >= 6.0.0'
 ]
 
 f = open(os.path.join(os.path.dirname(__file__), 'README.rst'))

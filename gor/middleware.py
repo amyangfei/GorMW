@@ -8,18 +8,6 @@ from .base import Gor
 from tornado import gen, ioloop, queues
 
 
-import contextlib
-from tornado.stack_context import StackContext
-
-@contextlib.contextmanager
-def die_on_error():
-    try:
-        yield
-    except Exception:
-        logging.error("exception in asynchronous operation", exc_info=True)
-        sys.exit(1)
-
-
 class TornadoGor(Gor):
 
     def __init__(self, *args, **kwargs):
@@ -60,6 +48,9 @@ class TornadoGor(Gor):
             yield
 
     def run(self):
-        with StackContext(die_on_error):
-            self.io_loop = ioloop.IOLoop.current()
+        self.io_loop = ioloop.IOLoop.current()
+        try:
             self.io_loop.run_sync(self._run)
+        except Exception:
+            logging.error("exception in run_sync", exc_info=True)
+
