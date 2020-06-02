@@ -4,12 +4,27 @@ import io
 import sys
 import binascii
 import unittest
+import threading
 
 from gor.middleware import AsyncioGor
 
 
+class Counter(object):
+    def __init__(self):
+        self.value = 0
+        self._lock = threading.Lock()
+
+    def increment(self):
+        with self._lock:
+            self.value += 1
+
+    def count(self):
+        with self._lock:
+            return self.value
+
+
 def _incr_received(proxy, msg, **kwargs):
-    kwargs['passby']['received'] += 1
+    kwargs['passby']['received'].increment()
 
 
 class TestAsyncioGor(unittest.TestCase):
@@ -22,7 +37,7 @@ class TestAsyncioGor(unittest.TestCase):
 
     def test_init(self):
 
-        passby = {'received': 0}
+        passby = {'received': Counter()}
         self.gor.on('message', _incr_received, passby=passby)
         self.gor.on('request', _incr_received, passby=passby)
         self.gor.on('response', _incr_received, idx='2', passby=passby)
@@ -34,7 +49,7 @@ class TestAsyncioGor(unittest.TestCase):
         self.gor.emit(req)
         self.gor.emit(resp)
         self.gor.emit(resp2)
-        self.assertEqual(passby['received'], 5)
+        self.assertEqual(passby['received'].count(), 5)
 
     def _proxy_coroutine(self, passby):
         proxy = AsyncioGor()
@@ -45,7 +60,7 @@ class TestAsyncioGor(unittest.TestCase):
 
     def test_run(self):
         old_stdin = sys.stdin
-        passby = {'received': 0}
+        passby = {'received': Counter()}
         payload = "\n".join([
             binascii.hexlify(b'1 2 3\nGET / HTTP/1.1\r\n\r\n').decode("utf-8"),
             binascii.hexlify(b'2 2 3\nHTTP/1.1 200 OK\r\n\r\n').decode("utf-8"),
@@ -53,5 +68,5 @@ class TestAsyncioGor(unittest.TestCase):
         ])
         sys.stdin = io.StringIO(payload)
         self._proxy_coroutine(passby)
-        self.assertEqual(passby['received'], 5)
+        self.assertEqual(passby['received'].count(), 5)
         sys.stdin = old_stdin
