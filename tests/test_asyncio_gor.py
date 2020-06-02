@@ -5,17 +5,17 @@ import sys
 import binascii
 import unittest
 
-from gor.middleware import TornadoGor
+from gor.middleware import AsyncioGor
 
 
 def _incr_received(proxy, msg, **kwargs):
     kwargs['passby']['received'] += 1
 
 
-class TestTornadoGor(unittest.TestCase):
+class TestAsyncioGor(unittest.TestCase):
 
     def setUp(self):
-        self.gor = TornadoGor()
+        self.gor = AsyncioGor()
 
     def tearDown(self):
         pass
@@ -37,7 +37,7 @@ class TestTornadoGor(unittest.TestCase):
         self.assertEqual(passby['received'], 5)
 
     def _proxy_coroutine(self, passby):
-        proxy = TornadoGor()
+        proxy = AsyncioGor()
         proxy.on('message', _incr_received, passby=passby)
         proxy.on('request', _incr_received, passby=passby)
         proxy.on('response', _incr_received, idx='2', passby=passby)

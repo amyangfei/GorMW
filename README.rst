@@ -28,12 +28,12 @@ or from source:
 Getting Started
 ---------------
 
-Initialize a TornadoGor based middleware and start it in the following way:
+Initialize a AsyncioGor based middleware and start it in the following way:
 
 .. code-block:: python
 
-    from gor.middleware import TornadoGor
-    proxy = TornadoGor()
+    from gor.middleware import AsyncioGor
+    proxy = AsyncioGor()
     proxy.run()
 
 Basic idea is that you write callbacks which respond to request, response, replay, or message events, which contains request meta information and actuall http paylod. Depending on your needs you may compare, override or filter incoming requests and responses.
@@ -47,7 +47,7 @@ You can respond to the incoming events using on function, by providing callbacks
         # msg is a GorMessage object
         pass
 
-    proxy = TornadoGor()
+    proxy = AsyncioGor()
     proxy.on('request', on_request)
     proxy.run()
 
@@ -57,7 +57,7 @@ You can provide request ID as additional argument to on function, which allow yo
 
     # coding: utf-8
     import sys
-    from gor.middleware import TornadoGor
+    from gor.middleware import AsyncioGor
 
 
     def on_request(proxy, msg, **kwargs):
@@ -76,7 +76,7 @@ You can provide request ID as additional argument to on function, which allow yo
         sys.stderr.flush()
 
     if __name__ == '__main__':
-        proxy = TornadoGor()
+        proxy = AsyncioGor()
         proxy.on('request', on_request)
         proxy.run()
 
