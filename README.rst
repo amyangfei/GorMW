@@ -51,7 +51,11 @@ You can respond to the incoming events using on function, by providing callbacks
     proxy.on('request', on_request)
     proxy.run()
 
-You can provide request ID as additional argument to on function, which allow you to map related requests and responses. Below is example of middleware which checks that original and replayed response have same HTTP status code. Have a try with following command `gor --input-raw :14000 --middleware "/path/to/middleware.py" --output-http-track-response --input-raw-track-response --output-http "http://127.0.0.1:14001"`
+You can provide request ID as additional argument to on function, which allow you to map related requests and responses. Below is example of middleware which checks that original and replayed response have same HTTP status code. Have a try with the following command and sample middleware.
+
+.. code-block:: bash
+
+    gor --input-raw :14000 --middleware "/path/to/middleware.py" --output-http-track-response --input-raw-track-response --output-http "http://127.0.0.1:14001"
 
 .. code-block:: python
 
