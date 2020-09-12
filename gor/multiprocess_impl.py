@@ -6,6 +6,8 @@ import multiprocessing
 from .base import Gor
 
 
+EXIT_MSG = ""
+
 class MultiProcessGor(Gor):
 
     def __init__(self, *args, **kwargs):
@@ -30,6 +32,8 @@ class MultiProcessGor(Gor):
         while True:
             line = self.q.get()
             try:
+                if line == EXIT_MSG:
+                    return
                 msg = self.parse_message(line)
                 if msg:
                     self.emit(msg)
@@ -37,12 +41,13 @@ class MultiProcessGor(Gor):
                 self.q.task_done()
 
     def _stop(self):
+        for _ in range(len(self.workers)):
+            self.q.put(EXIT_MSG)
         self.q.join()
 
     def run(self):
         for i in range(self.concurrency):
             worker = multiprocessing.Process(target=self._worker)
-            worker.daemon = True
             self.workers.append(worker)
         for worker in self.workers:
             worker.start()
