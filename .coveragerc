@@ -1,6 +1,8 @@
 [run]
 branch = True
 concurrency = multiprocessing
+include =
+    gor/*
 
 [report]
 # Regexes for lines to exclude from consideration
@@ -21,6 +23,3 @@ exclude_lines =
     if __name__ == .__main__.:
 
 ignore_errors = True
-
-# [html]
-# directory = coverage_html_report
