@@ -18,6 +18,7 @@ setup(
     version=__version__,
     description='Python library for GoReplay Middleware',
     long_description=long_description,
+    long_description_content_type='text/x-rst',
     url='http://github.com/amyangfei/GorMW',
     author='Yang Fei',
     author_email='amyangfei@gmail.com',
