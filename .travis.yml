@@ -6,8 +6,8 @@ python:
 install:
   - pip install coveralls
 script:
-  coverage run --concurrency=multiprocessing --source=gor setup.py test
-  coverage combine
+  - coverage run --source=gor setup.py test
+  - coverage combine
 after_success:
   coveralls
 env: TRAVIS=True
