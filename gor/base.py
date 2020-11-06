@@ -119,6 +119,26 @@ class Gor(object):
     def set_http_status(self, payload, new_status):
         return self.set_http_path(payload, new_status)
 
+    def http_headers(self, payload):
+        """
+        Parse the payload and return http headers in a map
+        :param payload: the http payload to inspect
+        :return: a map mapping from key to value of each http header item
+        """
+        if isinstance(payload, bytes):
+            payload = payload.decode()
+        start_index = payload.index("\r\n")
+        end_index = payload.index("\r\n\r\n")
+        if end_index == -1:
+            end_index = len(payload)
+        headers = {}
+        for item in payload[start_index+2:end_index].split("\r\n"):
+            sep_index = item.index(":")
+            key = item[:sep_index]
+            value = item[sep_index+1:].lstrip()
+            headers[key] = value
+        return headers
+
     def http_header(self, payload, name):
         current_line = 0
         idx = 0
@@ -168,6 +188,15 @@ class Gor(object):
         else:
             return payload[:header['value_start']] + ' ' + value + '\r\n' + payload[header['end']:]
 
+    def delete_http_header(self, payload, name):
+        if isinstance(payload, bytes):
+            payload = payload.decode()
+        header = self.http_header(payload, name)
+        if header is None:
+            return payload
+        else:
+            return payload[:header['start']] + payload[header['end']:]
+
     def http_body(self, payload):
         if '\r\n\r\n' not in payload:
             return ''
@@ -193,4 +222,10 @@ class Gor(object):
         cookies = cookie_data.get('value') or ''
         cookies = list(filter(lambda x: not x.startswith(name + '='), cookies.split('; ')))
         cookies.append(name + '=' + value)
+        return self.set_http_header(payload, 'Cookie', '; '.join(cookies))
+
+    def delete_http_cookie(self, payload, name):
+        cookie_data = self.http_header(payload, 'Cookie')
+        cookies = cookie_data.get('value') or ''
+        cookies = list(filter(lambda x: not x.startswith(name + '='), cookies.split('; ')))
         return self.set_http_header(payload, 'Cookie', '; '.join(cookies))
