@@ -20,7 +20,7 @@ matrix:
     - python: 'pypy3'
       dist:  jammy
 install:
-  - git clone https://github.com/docopt/docopt && pip3 install -e docopt
+  - git clone https://github.com/docopt/docopt && pip3 install -e ./docopt
   - pip3 install --upgrade setuptools wheel pytest docopt coverage coveralls
 script:
   - coverage run -m pytest tests/
