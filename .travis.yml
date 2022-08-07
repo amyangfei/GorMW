@@ -15,10 +15,9 @@ matrix:
     - python: 'nightly'
       dist: bionic
 install:
-  - pip install coveralls
+  - pip install coveralls pytest
 script:
-  - coverage run setup.py test
+  - coverage run -m pytest tests/
   - coverage combine
 after_success:
-  coveralls
-env: TRAVIS=True
+  - coveralls
