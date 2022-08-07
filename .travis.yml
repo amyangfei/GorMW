@@ -18,7 +18,6 @@ matrix:
     - python: 'nightly'
       dist:  jammy
     - python: 'pypy3'
-    - python: 'pypy3'
       dist:  jammy
 install:
   - pip install --upgrade --no-deps setuptools wheel pytest coverage coveralls
