@@ -5,8 +5,8 @@ Python library for `GoReplay Middleware <https://github.com/buger/goreplay>`_ , 
 
 .. image:: https://badge.fury.io/py/gor.svg
     :target: https://badge.fury.io/py/gor
-.. image:: https://travis-ci.org/amyangfei/GorMW.svg?branch=master
-    :target: https://travis-ci.org/amyangfei/GorMW
+.. image:: https://app.travis-ci.com/amyangfei/GorMW.svg?branch=master
+    :target: https://app.travis-ci.com/amyangfei/GorMW
 .. image:: https://coveralls.io/repos/github/amyangfei/GorMW/badge.svg?branch=master
     :target: https://coveralls.io/github/amyangfei/GorMW?branch=master
 
