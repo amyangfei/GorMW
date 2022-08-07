@@ -21,7 +21,7 @@ matrix:
     - python: 'pypy3'
       dist:  jammy
 install:
-  - pip setuptools
+  - pip install setuptools
   - pip install coveralls pytest
 script:
   - coverage run -m pytest tests/
