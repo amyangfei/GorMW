@@ -1,6 +1,6 @@
 language: python
 
-dist: jammy
+dist: focal
 
 matrix:
   fast_finish: true
@@ -9,10 +9,17 @@ matrix:
     - python: '3.6'
     - python: '3.7'
     - python: '3.8'
+    - python: '3.8'
+      dist:  jammy
     - python: '3.9'
+      dist:  jammy
     - python: '3.10'
+      dist:  jammy
     - python: 'nightly'
+      dist:  jammy
     - python: 'pypy3'
+    - python: 'pypy3'
+      dist:  jammy
 install:
   - pip install coveralls pytest
 script:
