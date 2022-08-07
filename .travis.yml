@@ -20,7 +20,7 @@ matrix:
     - python: 'pypy3'
       dist:  jammy
 install:
-  - pip install --upgrade --no-deps setuptools wheel pytest coverage coveralls
+  - pip install --upgrade --no-deps setuptools wheel pytest coverage coveralls requests
 script:
   - coverage run -m pytest tests/
   - coverage combine
