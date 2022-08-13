@@ -45,7 +45,8 @@ class AsyncioGor(Gor):
             t = self.io_loop.create_task(self._worker())
             self.tasks.append(t)
 
-        self.io_loop.create_task(self._stdin_reader())
+        stdin_reader_task = self.io_loop.create_task(self._stdin_reader())
+        self.tasks.append(stdin_reader_task)
 
     def _stop(self):
         for t in self.tasks:
