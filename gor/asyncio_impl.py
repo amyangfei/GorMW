@@ -53,7 +53,7 @@ class AsyncioGor(Gor):
         self.io_loop.stop()
 
     def run(self):
-        self.io_loop = asyncio.get_running_loop()
+        self.io_loop = asyncio.new_event_loop()
         self.io_loop.create_task(self._run())
         try:
             self.io_loop.run_forever()
