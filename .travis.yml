@@ -11,9 +11,8 @@ matrix:
     - python: '3.8'
     - python: '3.8'
       dist:  jammy
-    # can't install docopt==0.6.2 in travis env
-    # - python: '3.9'
-    #   dist:  jammy
+    - python: '3.9'
+      dist:  jammy
     - python: '3.10'
       dist:  jammy
     - python: 'nightly'
