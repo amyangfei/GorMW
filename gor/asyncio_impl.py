@@ -52,12 +52,20 @@ class AsyncioGor(Gor):
             t.cancel()
         self.io_loop.stop()
 
+    def _set_event_loop(self):
+        if sys.version_info.major == 3 and sys.version_info.minor < 10:
+            # less than 3.10.0
+            self.io_loop = asyncio.get_event_loop()
+        else:
+            # equal or greater than 3.10.0
+            try:
+                self.io_loop = asyncio.get_running_loop()
+            except RuntimeError:
+                self.io_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.io_loop)
+
     def run(self):
-        try:
-            self.io_loop = asyncio.get_running_loop()
-        except RuntimeError:
-            self.io_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.io_loop)
+        self._set_event_loop()
         self.io_loop.create_task(self._run())
         try:
             self.io_loop.run_forever()
