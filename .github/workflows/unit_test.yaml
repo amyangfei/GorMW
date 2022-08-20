@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install coverage coveralls
+          pip install pytest coverage coveralls
 
       - name: Run tests and upload coverages
         run: |
