@@ -36,4 +36,8 @@ jobs:
         run: |
           coverage run -m pytest tests/
           coverage combine
-          coveralls
+
+      - name: Coveralls
+        uses: AndreMiras/coveralls-python-action@develop
+        with:
+          parallel: true
