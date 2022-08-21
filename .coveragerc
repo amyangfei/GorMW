@@ -3,6 +3,7 @@ branch = True
 concurrency = multiprocessing
 include =
     gor/*
+relative_files = True
 
 [report]
 # Regexes for lines to exclude from consideration
