@@ -37,7 +37,7 @@ def _incr_received(proxy, msg, **kwargs):
 class TestMultiProcessGor(unittest.TestCase):
 
     def setUp(self):
-        self.gor = MultiProcessGor(concurrency=1)
+        self.gor = MultiProcessGor(concurrency=4)
 
     def tearDown(self):
         pass
