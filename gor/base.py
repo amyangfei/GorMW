@@ -28,9 +28,9 @@ class GorMessage(object):
 
 class Gor(object):
 
-    def __init__(self, stderr=None):
-        self.stderr = stderr or sys.stderr
-        self.ch = {}
+    def __init__(self, chan_container, *args, **kwargs):
+        self.stderr = sys.stderr
+        self.chan_container = chan_container
 
     def run(self):
         raise NotImplementedError
@@ -39,12 +39,7 @@ class Gor(object):
         if idx is not None:
             chan = chan + '#' + idx
 
-        self.ch.setdefault(chan, [])
-        self.ch[chan].append({
-            'created': datetime.datetime.now(),
-            'callback': callback,
-            'kwargs': kwargs,
-        })
+        self.chan_container.add(chan, callback, **kwargs)
         return self
 
     def emit(self, msg):
@@ -56,11 +51,9 @@ class Gor(object):
         chan_prefix = chan_prefix_map[msg.type]
         resp = msg
         for chan_id in ['message', chan_prefix, chan_prefix + '#' + msg.id]:
-            if self.ch.get(chan_id):
-                for channel in self.ch[chan_id]:
-                    r = channel['callback'](self, msg, **channel['kwargs'])
-                    if r:
-                        resp = r
+            r = self.chan_container.do_callback(self, chan_id, msg)
+            if r:
+                resp = r
         if resp:
             sys.stdout.write(gor_hex_data(resp))
             sys.stdout.flush()

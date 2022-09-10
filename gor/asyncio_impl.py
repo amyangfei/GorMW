@@ -5,12 +5,14 @@ import logging
 import asyncio
 
 from .base import Gor
+from .callback import SimpleCallbackContainer
 
 
 class AsyncioGor(Gor):
 
     def __init__(self, *args, **kwargs):
-        super(AsyncioGor, self).__init__(*args, **kwargs)
+        chan_container = SimpleCallbackContainer()
+        super(AsyncioGor, self).__init__(chan_container, *args, **kwargs)
         self.q = asyncio.Queue()
         self.concurrency = kwargs.get('concurrency', 2)
         self.tasks = []

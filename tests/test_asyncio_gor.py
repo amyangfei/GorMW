@@ -41,7 +41,7 @@ class TestAsyncioGor(unittest.TestCase):
         self.gor.on('message', _incr_received, passby=passby)
         self.gor.on('request', _incr_received, passby=passby)
         self.gor.on('response', _incr_received, idx='2', passby=passby)
-        self.assertEqual(len(self.gor.ch), 3)
+        self.assertEqual(len(self.gor.chan_container.ch), 3)
 
         req = self.gor.parse_message(binascii.hexlify(b'1 2 3\nGET / HTTP/1.1\r\n\r\n'))
         resp = self.gor.parse_message(binascii.hexlify(b'2 2 3\nHTTP/1.1 200 OK\r\n\r\n'))
