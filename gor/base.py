@@ -39,7 +39,7 @@ class Gor(object):
         if idx is not None:
             chan = chan + '#' + idx
 
-        self.chan_container.add(chan, callback)
+        self.chan_container.add(chan, callback, **kwargs)
         return self
 
     def emit(self, msg):

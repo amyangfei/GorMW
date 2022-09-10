@@ -4,12 +4,13 @@ import binascii
 import unittest
 
 from gor.base import Gor
+from gor.callback import SimpleCallbackContainer
 
 
 class TestCommon(unittest.TestCase):
 
     def setUp(self):
-        self.gor = Gor()
+        self.gor = Gor(SimpleCallbackContainer())
 
     def tearDown(self):
         pass
