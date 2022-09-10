@@ -36,7 +36,6 @@ class Gor(object):
         raise NotImplementedError
 
     def on(self, chan, callback, idx=None, **kwargs):
-        #  sys.stderr.write("gor on triggers chan: %s idx: %s\n" % (chan, idx))
         if idx is not None:
             chan = chan + '#' + idx
 
@@ -51,7 +50,6 @@ class Gor(object):
         }
         chan_prefix = chan_prefix_map[msg.type]
         resp = msg
-        #  sys.stderr.write("emit message msg.type: msg.type: %s msg.id: %s, ch keys: %r\n" % (msg.type, msg.id, self.chan_container.ch.keys()))
         for chan_id in ['message', chan_prefix, chan_prefix + '#' + msg.id]:
             r = self.chan_container.do_callback(self, chan_id, msg)
             if r:
