@@ -16,16 +16,15 @@ class AsyncioGor(Gor):
         self.q = asyncio.Queue()
         self.concurrency = kwargs.get('concurrency', 2)
         self.tasks = []
+        self.queues = []
 
-    async def _worker(self):
+    async def _worker(self, queue):
         while True:
-            line = await self.q.get()
             try:
-                msg = self.parse_message(line)
-                if msg:
-                    self.emit(msg)
+                msg = await queue.get()
+                self.emit(msg)
             finally:
-                self.q.task_done()
+                queue.task_done()
 
     async def _stdin_reader(self):
         while True:
@@ -33,22 +32,30 @@ class AsyncioGor(Gor):
                 await asyncio.sleep(0)
                 line = sys.stdin.readline()
             except KeyboardInterrupt:
-                await self.q.join()
+                await self._wait_task_queues()
                 self._stop()
                 break
             if not line:
-                await self.q.join()
+                await self._wait_task_queues()
                 self._stop()
                 break
-            await self.q.put(line)
+            msg = self.parse_message(line)
+            h = hash(msg.id) % len(self.queues)
+            await self.queues[h].put(msg)
 
     async def _run(self):
         for _ in range(self.concurrency):
-            t = self.io_loop.create_task(self._worker())
+            q = asyncio.Queue()
+            self.queues.append(q)
+            t = self.io_loop.create_task(self._worker(q))
             self.tasks.append(t)
 
         stdin_reader_task = self.io_loop.create_task(self._stdin_reader())
         self.tasks.append(stdin_reader_task)
+
+    async def _wait_task_queues(self):
+        for queue in self.queues:
+            await queue.join()
 
     def _stop(self):
         for t in self.tasks:
