@@ -3,7 +3,7 @@
 import binascii
 import unittest
 
-from gor.base import Gor
+from gor.base import Gor, decode_chunked
 from gor.callback import SimpleCallbackContainer
 
 
@@ -142,10 +142,21 @@ class TestCommon(unittest.TestCase):
         new_payload = self.gor.delete_http_cookie(payload, 'test')
         self.assertEqual(new_payload, b'GET / HTTP/1.1\r\nCookie: a=b\r\n\r\n')
 
-    '''
     def test_decompress_gzip_body(self):
+        expected = '{"code":"1", "message": "hello", "detail": "黄河、长江。emoji: 😊。"}'
+
         gzip_body_hex = '485454502f312e3120323030204f4b0d0a5365727665723a206e67696e782f312e32332e310d0a446174653a204d6f6e2c2031322053657020323032322030313a30383a343120474d540d0a436f6e74656e742d547970653a206170706c69636174696f6e2f6a736f6e0d0a5472616e736665722d456e636f64696e673a206368756e6b65640d0a436f6e6e656374696f6e3a206b6565702d616c6976650d0a566172793a204163636570742d456e636f64696e670d0a436f6e74656e742d456e636f64696e673a20677a69700d0a0d0a35640d0a1f8b0800000000000403ab564ace4f4955b2523254d25150ca4d2d2e4e4c0772159432527372f2416229a92589993920a197bb5b9e6ddafcb8a1f1e5d4fdcf36ce7fdcd0949a9b9f9569a5f061fe8c2e204fa916005a29ad344e0000000d0a300d0a0d0a'
         gzip_payload = bytes.fromhex(gzip_body_hex)
         body = self.gor.decompress_gzip_body(gzip_payload)
-        self.assertEqual(body, '')
-    '''
+        self.assertEqual(body.decode(), expected)
+
+        plain_body_hex = '485454502f312e3120323030204f4b0d0a436f6e74656e742d4c656e6774683a2037380d0a5365727665723a206e67696e782f312e32332e310d0a446174653a204d6f6e2c2031322053657020323032322031343a31333a303320474d540d0a436f6e74656e742d547970653a206170706c69636174696f6e2f6a736f6e0d0a436f6e6e656374696f6e3a206b6565702d616c6976650d0a566172793a204163636570742d456e636f64696e670d0a0d0a7b22636f6465223a2231222c20226d657373616765223a202268656c6c6f222c202264657461696c223a2022e9bb84e6b2b3e38081e995bfe6b19fe38082656d6f6a693a20f09f988ae38082227d'
+        plain_payload = bytes.fromhex(plain_body_hex)
+        plain_body = self.gor.decompress_gzip_body(plain_payload)
+        self.assertEqual(plain_body.decode(), expected)
+
+    def test_decode_chunked(self):
+        data = b'4\r\nWiki\r\n6\r\npedia \r\nE\r\nin \r\n\r\nchunks.\r\n0\r\n\r\n'
+        decoded = decode_chunked(data)
+        self.assertEqual(decoded, b"Wikipedia in \r\n\r\nchunks.")
+

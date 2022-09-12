@@ -18,6 +18,19 @@ def gor_hex_data(data):
     return data.decode('utf-8')
 
 
+def decode_chunked(chunked_data: bytes) -> bytes:
+    result = b''
+    while chunked_data != b'':
+        chunked_size_sep = chunked_data.index(b"\r\n")
+        offset = int(chunked_data[:chunked_size_sep], 16)
+        if offset == 0:
+            break
+        chunked_data = chunked_data[chunked_size_sep + 2:]
+        result += chunked_data[:offset]
+        chunked_data = chunked_data[offset+2:]
+    return result
+
+
 class GorMessage(object):
 
     def __init__(self, _id, _type, meta, raw_meta, http):
@@ -219,19 +232,15 @@ class Gor(object):
         cookies = list(filter(lambda x: not x.startswith(name + '='), cookies.split('; ')))
         return self.set_http_header(payload, 'Cookie', '; '.join(cookies))
 
-    '''
-    def decompress_gzip_body(self, payload: bytes) -> str:
-        headers = self.http_headers()
+    def decompress_gzip_body(self, payload: bytes) -> bytes:
+        headers = self.http_headers(payload)
         transfer_encoding = headers.get('Transfer-Encoding')
         content_encoding  = headers.get('Content-Encoding')
         body = self.http_body(payload)
-        if encoding == 'gzip':
-            data = body
+        if content_encoding == 'gzip':
             if transfer_encoding.lower() == 'chunked':
-                # TODO: chunked data decode
-                pass
-            body = gzip.decompress(data)
-        else:
-            body = body.decode('utf-8')
+                data = decode_chunked(body)
+            else:
+                data = body
+            return gzip.decompress(data)
         return body
-    '''
