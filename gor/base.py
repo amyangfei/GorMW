@@ -7,7 +7,7 @@ import binascii
 import datetime
 import traceback
 from urllib.parse import quote_plus, urlparse, parse_qs
-from typing import Union, Dict
+from typing import Dict
 
 
 def gor_hex_data(data):
@@ -115,14 +115,12 @@ class Gor(object):
     def set_http_status(self, payload: bytes, new_status: str) -> bytes:
         return self.set_http_path(payload, new_status)
 
-    def http_headers(self, payload: Union[bytes, str]) -> Dict[str, str]:
+    def http_headers(self, payload: bytes) -> Dict[str, str]:
         """
         Parse the payload and return http headers in a map
         :param payload: the http payload to inspect
         :return: a map mapping from key to value of each http header item
         """
-        if isinstance(payload, str):
-            payload = payload.encode()
         start_index = payload.index(b"\r\n")
         end_index = payload.index(b"\r\n\r\n")
         if end_index == -1:
@@ -135,7 +133,7 @@ class Gor(object):
             headers[key] = value
         return headers
 
-    def http_header(self, payload: Union[bytes, str], name: str) -> Dict[str, str]:
+    def http_header(self, payload: bytes, name: str) -> Dict[str, str]:
         current_line = 0
         idx = 0
         header = {
@@ -143,8 +141,6 @@ class Gor(object):
             'end': -1,
             'value_start': -1,
         }
-        if isinstance(payload, str):
-            payload = payload.encode()
         name = name.encode()
         while idx < len(payload):
             c = payload[idx]
@@ -175,9 +171,7 @@ class Gor(object):
             idx += 1
         return None
 
-    def set_http_header(self, payload: Union[bytes, str], name: str, value: str) -> bytes:
-        if isinstance(payload, str):
-            payload = payload.encode()
+    def set_http_header(self, payload: bytes, name: str, value: str) -> bytes:
         header = self.http_header(payload, name)
         if header is None:
             header_start = payload.index(b'\n') + 1
@@ -185,9 +179,7 @@ class Gor(object):
         else:
             return payload[:header['value_start']] + b' ' + value.encode() + b'\r\n' + payload[header['end']:]
 
-    def delete_http_header(self, payload: Union[bytes, str], name: str) -> bytes:
-        if isinstance(payload, str):
-            payload = payload.encode()
+    def delete_http_header(self, payload: bytes, name: str) -> bytes:
         header = self.http_header(payload, name)
         if header is None:
             return payload
