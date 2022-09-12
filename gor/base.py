@@ -232,7 +232,7 @@ class Gor(object):
         cookies = list(filter(lambda x: not x.startswith(name + '='), cookies.split('; ')))
         return self.set_http_header(payload, 'Cookie', '; '.join(cookies))
 
-    def decompress_gzip_body(self, payload: bytes) -> str:
+    def decompress_gzip_body(self, payload: bytes) -> bytes:
         headers = self.http_headers(payload)
         transfer_encoding = headers.get('Transfer-Encoding')
         content_encoding  = headers.get('Content-Encoding')
@@ -243,4 +243,4 @@ class Gor(object):
             else:
                 data = body
             return gzip.decompress(data)
-        return body.decode('utf-8')
+        return body
