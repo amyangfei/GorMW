@@ -2,10 +2,12 @@
 
 import re
 import sys
+import gzip
 import binascii
 import datetime
 import traceback
 from urllib.parse import quote_plus, urlparse, parse_qs
+from typing import Union
 
 
 def gor_hex_data(data):
@@ -58,11 +60,11 @@ class Gor(object):
             sys.stdout.write(gor_hex_data(resp))
             sys.stdout.flush()
 
-    def parse_message(self, line):
+    def parse_message(self, line: bytes) -> bytes:
         try:
-            payload = binascii.unhexlify(line.strip()).decode()
-            meta_pos = payload.index('\n')
-            meta = payload[:meta_pos]
+            payload = binascii.unhexlify(line.strip())
+            meta_pos = payload.index(b'\n')
+            meta = payload[:meta_pos].decode()
             meta_arr = meta.split(' ')
             p_type, p_id = meta_arr[0], meta_arr[1]
             raw = payload[meta_pos+1:]
@@ -71,26 +73,26 @@ class Gor(object):
             self.stderr.write('Error while parsing incoming request: "%s" %s' % (line, e))
             traceback.print_exc(file=sys.stderr)
 
-    def http_method(self, payload):
-        pend = payload.index(' ')
-        return payload[:pend]
+    def http_method(self, payload: bytes) -> str:
+        pend = payload.index(b' ')
+        return payload[:pend].decode()
 
-    def http_path(self, payload):
-        pstart = payload.index(' ') + 1
-        pend = payload.index(' ', pstart)
-        return payload[pstart:pend]
+    def http_path(self, payload: bytes) -> str:
+        pstart = payload.index(b' ') + 1
+        pend = payload.index(b' ', pstart)
+        return payload[pstart:pend].decode()
 
-    def set_http_path(self, payload, new_path):
-        pstart = payload.index(' ') + 1
-        pend = payload.index(' ', pstart)
+    def set_http_path(self, payload: bytes, new_path: bytes) -> bytes:
+        pstart = payload.index(b' ') + 1
+        pend = payload.index(b' ', pstart)
         return payload[:pstart] + new_path + payload[pend:]
 
-    def http_path_param(self, payload, name):
+    def http_path_param(self, payload: bytes, name: str) -> str:
         path_qs = self.http_path(payload)
         query_dict = parse_qs(urlparse(path_qs).query)
         return query_dict.get(name)
 
-    def set_http_path_param(self, payload, name, value):
+    def set_http_path_param(self, payload: bytes, name: str, value: str) -> bytes:
         path_qs = self.http_path(payload)
         new_path = re.sub(name + '=([^&$]+)',
                           name + '=' + quote_plus(value),
@@ -101,38 +103,39 @@ class Gor(object):
             else:
                 new_path += '&'
             new_path += name + '=' + quote_plus(value)
+        new_path = new_path.encode()
         return self.set_http_path(payload, new_path)
 
-    def http_status(self, payload):
+    def http_status(self, payload: bytes) -> str:
         '''
         HTTP response have status code in same position as `path` for requests
         '''
         return self.http_path(payload)
 
-    def set_http_status(self, payload, new_status):
+    def set_http_status(self, payload: bytes, new_status: str) -> bytes:
         return self.set_http_path(payload, new_status)
 
-    def http_headers(self, payload):
+    def http_headers(self, payload: Union[bytes, str]) -> dict[str, str]:
         """
         Parse the payload and return http headers in a map
         :param payload: the http payload to inspect
         :return: a map mapping from key to value of each http header item
         """
-        if isinstance(payload, bytes):
-            payload = payload.decode()
-        start_index = payload.index("\r\n")
-        end_index = payload.index("\r\n\r\n")
+        if isinstance(payload, str):
+            payload = payload.encode()
+        start_index = payload.index(b"\r\n")
+        end_index = payload.index(b"\r\n\r\n")
         if end_index == -1:
             end_index = len(payload)
         headers = {}
-        for item in payload[start_index+2:end_index].split("\r\n"):
-            sep_index = item.index(":")
-            key = item[:sep_index]
-            value = item[sep_index+1:].lstrip()
+        for item in payload[start_index+2:end_index].split(b"\r\n"):
+            sep_index = item.index(b":")
+            key = item[:sep_index].decode()
+            value = item[sep_index+1:].lstrip().decode()
             headers[key] = value
         return headers
 
-    def http_header(self, payload, name):
+    def http_header(self, payload: Union[bytes, str], name: str) -> dict[str, str]:
         current_line = 0
         idx = 0
         header = {
@@ -140,28 +143,29 @@ class Gor(object):
             'end': -1,
             'value_start': -1,
         }
-        if isinstance(payload, bytes):
-            payload = payload.decode()
+        if isinstance(payload, str):
+            payload = payload.encode()
+        name = name.encode()
         while idx < len(payload):
             c = payload[idx]
-            if c == '\n':
+            if c == ord('\n'):
                 current_line += 1
                 idx += 1
                 header['end'] = idx
 
                 if current_line > 0 and header['start'] > 0 and header['value_start'] > 0:
                     if payload[header['start']:header['value_start']-1].lower() == name.lower():
-                        header['value'] = payload[header['value_start']:header['end']].strip()
-                        header['name'] = name.lower()
+                        header['value'] = payload[header['value_start']:header['end']].strip().decode()
+                        header['name'] = name.lower().decode()
                         return header
 
                 header['start'] = -1
                 header['value_start'] = -1
                 continue
-            elif c == '\r':
+            elif c == ord('\r'):
                 idx += 1
                 continue
-            elif c == ':':
+            elif c == ord(':'):
                 if header['value_start'] == -1:
                     idx += 1
                     header['value_start'] = idx
@@ -171,38 +175,38 @@ class Gor(object):
             idx += 1
         return None
 
-    def set_http_header(self, payload, name, value):
-        if isinstance(payload, bytes):
-            payload = payload.decode()
+    def set_http_header(self, payload: Union[bytes, str], name: str, value: str) -> bytes:
+        if isinstance(payload, str):
+            payload = payload.encode()
         header = self.http_header(payload, name)
         if header is None:
-            header_start = payload.index('\n') + 1
-            return payload[:header_start] + name + ': ' + value + '\r\n' + payload[header_start:]
+            header_start = payload.index(b'\n') + 1
+            return payload[:header_start] + name.encode() + b': ' + value.encode() + b'\r\n' + payload[header_start:]
         else:
-            return payload[:header['value_start']] + ' ' + value + '\r\n' + payload[header['end']:]
+            return payload[:header['value_start']] + b' ' + value.encode() + b'\r\n' + payload[header['end']:]
 
-    def delete_http_header(self, payload, name):
-        if isinstance(payload, bytes):
-            payload = payload.decode()
+    def delete_http_header(self, payload: Union[bytes, str], name: str) -> bytes:
+        if isinstance(payload, str):
+            payload = payload.encode()
         header = self.http_header(payload, name)
         if header is None:
             return payload
         else:
             return payload[:header['start']] + payload[header['end']:]
 
-    def http_body(self, payload):
-        if '\r\n\r\n' not in payload:
-            return ''
-        return payload[payload.index('\r\n\r\n')+4:]
+    def http_body(self, payload: bytes) -> bytes:
+        if b'\r\n\r\n' not in payload:
+            return b''
+        return payload[payload.index(b'\r\n\r\n')+4:]
 
-    def set_http_body(self, payload, new_body):
+    def set_http_body(self, payload: bytes, new_body: bytes) -> bytes:
         payload = self.set_http_header(payload, 'Content-Length', str(len(new_body)))
-        if '\r\n\r\n' not in payload:
-            return payload + '\r\n\r\n' + new_body
+        if b'\r\n\r\n' not in payload:
+            return payload + b'\r\n\r\n' + new_body
         else:
-            return payload[:payload.index('\r\n\r\n')+4] + new_body
+            return payload[:payload.index(b'\r\n\r\n')+4] + new_body
 
-    def http_cookie(self, payload, name):
+    def http_cookie(self, payload: bytes, name: str) -> str:
         cookie_data = self.http_header(payload, 'Cookie')
         cookies = cookie_data.get('value') or ''
         for item in cookies.split('; '):
@@ -210,15 +214,32 @@ class Gor(object):
                 return item[item.index('=')+1:]
         return None
 
-    def set_http_cookie(self, payload, name, value):
+    def set_http_cookie(self, payload: bytes, name: str, value: str) -> bytes:
         cookie_data = self.http_header(payload, 'Cookie')
         cookies = cookie_data.get('value') or ''
         cookies = list(filter(lambda x: not x.startswith(name + '='), cookies.split('; ')))
         cookies.append(name + '=' + value)
         return self.set_http_header(payload, 'Cookie', '; '.join(cookies))
 
-    def delete_http_cookie(self, payload, name):
+    def delete_http_cookie(self, payload: bytes, name: str) -> bytes:
         cookie_data = self.http_header(payload, 'Cookie')
         cookies = cookie_data.get('value') or ''
         cookies = list(filter(lambda x: not x.startswith(name + '='), cookies.split('; ')))
         return self.set_http_header(payload, 'Cookie', '; '.join(cookies))
+
+    '''
+    def decompress_gzip_body(self, payload: bytes) -> str:
+        headers = self.http_headers()
+        transfer_encoding = headers.get('Transfer-Encoding')
+        content_encoding  = headers.get('Content-Encoding')
+        body = self.http_body(payload)
+        if encoding == 'gzip':
+            data = body
+            if transfer_encoding.lower() == 'chunked':
+                # TODO: chunked data decode
+                pass
+            body = gzip.decompress(data)
+        else:
+            body = body.decode('utf-8')
+        return body
+    '''
