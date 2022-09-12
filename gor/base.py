@@ -7,7 +7,6 @@ import binascii
 import datetime
 import traceback
 from urllib.parse import quote_plus, urlparse, parse_qs
-from typing import Union
 
 
 def gor_hex_data(data):
@@ -115,7 +114,7 @@ class Gor(object):
     def set_http_status(self, payload: bytes, new_status: str) -> bytes:
         return self.set_http_path(payload, new_status)
 
-    def http_headers(self, payload: Union[bytes, str]) -> dict[str, str]:
+    def http_headers(self, payload: bytes|str) -> dict[str, str]:
         """
         Parse the payload and return http headers in a map
         :param payload: the http payload to inspect
@@ -135,7 +134,7 @@ class Gor(object):
             headers[key] = value
         return headers
 
-    def http_header(self, payload: Union[bytes, str], name: str) -> dict[str, str]:
+    def http_header(self, payload: bytes|str, name: str) -> dict[str, str]:
         current_line = 0
         idx = 0
         header = {
@@ -175,7 +174,7 @@ class Gor(object):
             idx += 1
         return None
 
-    def set_http_header(self, payload: Union[bytes, str], name: str, value: str) -> bytes:
+    def set_http_header(self, payload: bytes|str, name: str, value: str) -> bytes:
         if isinstance(payload, str):
             payload = payload.encode()
         header = self.http_header(payload, name)
@@ -185,7 +184,7 @@ class Gor(object):
         else:
             return payload[:header['value_start']] + b' ' + value.encode() + b'\r\n' + payload[header['end']:]
 
-    def delete_http_header(self, payload: Union[bytes, str], name: str) -> bytes:
+    def delete_http_header(self, payload: bytes|str, name: str) -> bytes:
         if isinstance(payload, str):
             payload = payload.encode()
         header = self.http_header(payload, name)
